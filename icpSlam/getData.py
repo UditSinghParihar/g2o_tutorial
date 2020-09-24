@@ -47,7 +47,8 @@ def getCloud(cube, color):
 def getFrames():
 	# posei = ( x, y, z, thetaZ(deg) )
 
-	poses = [[-8, 8, 0, -60], [-10, 4, 0, -30], [-12, 0, 0, 0], [-10, -4, 0, 30], [-8, -8, 0, 60]]
+	# poses = [[-8, 8, 0, -60], [-10, 4, 0, -30], [-12, 0, 0, 0], [-10, -4, 0, 30], [-8, -8, 0, 60]]
+	poses = [[-12, 0, 0, 0], [-10, -4, 0, 30], [-8, -8, 0, 60], [-4, -12, 0, 75], [0, -16, 0, 80]]
 
 	frames = []
 
@@ -75,14 +76,23 @@ def getLocalCubes(points, poses):
 	
 	points = np.array(points)
 	poses = np.array(poses)
-	
+
 	nPoses, nPoints, pointDim = poses.shape[0], points.shape[0], points.shape[1]
 	cubes = np.zeros((nPoses, nPoints, pointDim))
 
-	for i in range(nPoses):
-		cube = points - poses[i, 0:3]
+	for i, pose in enumerate(poses):
+		cube = []
 
-		cubes[i] = cube
+		T = np.identity(4)
+		T[0, 3], T[1, 3], T[2, 3] = pose[0], pose[1], pose[2]
+		T[0:3, 0:3] = R.from_euler('z', pose[3], degrees=True).as_dcm()
+
+		for pt in np.hstack((points, np.ones((points.shape[0], 1)))):
+			ptLocal = np.linalg.inv(T) @ pt.reshape(4, 1)
+
+			cube.append(ptLocal.squeeze(1)[0:3])
+
+		cubes[i] = np.asarray(cube)
 
 	return cubes
 
@@ -167,28 +177,57 @@ def icpTransformations(cubes):
 	T4_5 = p2p.compute_transformation(pcd5, pcd4, o3d.utility.Vector2iVector(corr))
 
 	# draw_registration_result(pcd2, pcd1, T1_2)
+	# print(T1_2)
+	# print(R.from_dcm(T1_2[0:3, 0:3]).as_euler('zyx', degrees=True))
 
 	trans = np.array([T1_2, T2_3, T3_4, T4_5])
 
 	return trans
 
 
+def getRobotPose(trans):
+	# Tw_1: 1 wrt w
+
+	start = [-12, 0, 0, 0]
+
+	Tw_1 = np.identity(4)
+	Tw_1[0, 3], Tw_1[1, 3], Tw_1[2, 3] = start[0], start[1], start[2]
+	Tw_1[0:3, 0:3] = R.from_euler('z', start[3], degrees=True).as_dcm()
+
+	T1_2, T2_3, T3_4, T4_5 = trans[0], trans[1], trans[2], trans[3]
+
+	Tw_2 = Tw_1 @ T1_2
+	Tw_3 = Tw_2 @ T2_3
+	Tw_4 = Tw_3 @ T3_4
+	Tw_5 = Tw_4 @ T4_5
+
+	print(Tw_5, R.from_dcm(Tw_5[0:3, 0:3]).as_euler('zyx', degrees=True))
+	
+
 def writeG2o(trans, cubes):
-	pass
+	posesRobot = getRobotPose(trans)
+
+
+	g2o = open("noise.g2o", 'w')
+
+	g2o.close()
+
 
 
 if __name__ == '__main__':
 	vertices, points = getVertices()
 	frames, poses = getFrames()
 
-	visualizeData(vertices, frames)
+	# visualizeData(vertices, frames)
 
 	gtCubes = getLocalCubes(points, poses)
-	noisyCubesHigh = addNoiseCubes(gtCubes, noise=0.4)
-	noisyCubesLow = addNoiseCubes(gtCubes, noise=0.15)
+	# noisyCubesHigh = addNoiseCubes(gtCubes, noise=0.4)
+	# noisyCubesLow = addNoiseCubes(gtCubes, noise=0.15)
+	noisyCubesHigh = addNoiseCubes(gtCubes, noise=0)
+	noisyCubesLow = addNoiseCubes(gtCubes, noise=0)
 
 	trans = icpTransformations(noisyCubesHigh)
 
-	registerCubes(trans, noisyCubesLow)
+	# registerCubes(trans, noisyCubesLow)
 
-	# writeG2o(trans, cubes)
+	writeG2o(trans, noisyCubesLow)
