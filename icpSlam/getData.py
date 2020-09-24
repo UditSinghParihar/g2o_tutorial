@@ -26,10 +26,27 @@ def getVertices():
 	return vertices, points
 
 
+def getCloud(cube, color):
+	vertices = []
+
+	for ele in cube:	
+		sphere = o3d.geometry.TriangleMesh.create_sphere(radius=0.15)
+		sphere.paint_uniform_color(color)
+
+		trans = np.identity(4)
+		trans[0, 3] = ele[0]
+		trans[1, 3] = ele[1]
+		trans[2, 3] = ele[2]
+
+		sphere.transform(trans)
+		vertices.append(sphere)
+
+	return vertices
+
+
 def getFrames():
 	# posei = ( x, y, z, thetaZ(deg) )
 
-	# poses = [[-4, 4, 0, -60], [-5, 2, 0, -30], [-6, 0, 0, 0], [-5, -2, 0, 30], [-4, -4, 0, 60]]
 	poses = [[-8, 8, 0, -60], [-10, 4, 0, -30], [-12, 0, 0, 0], [-10, -4, 0, 30], [-8, -8, 0, 60]]
 
 	frames = []
@@ -65,9 +82,6 @@ def getLocalCubes(points, poses):
 	for i in range(nPoses):
 		cube = points - poses[i, 0:3]
 
-		# noise = np.random.normal(0, 0.3, cube.size).reshape(cube.shape)
-
-		# cubes[i] = cube + noise
 		cubes[i] = cube
 
 	return cubes
@@ -81,16 +95,6 @@ def addNoiseCubes(cubes, noise=0.15):
 		noisyCubes[i] = cubes[i] + noiseMat
 
 	return noisyCubes
-
-
-def addNoiseTrans(trans, noise=0.3):
-	noisyTrans = np.zeros(trans.shape)
-
-	for i in range(trans.shape[0]):
-		noiseMat = np.random.normal(0, noise, trans[i].size).reshape(trans[i].shape)
-		noisyTrans[i] = trans[i] + noiseMat
-
-	return noisyTrans
 
 
 def draw_registration_result(source, target, transformation):
@@ -112,9 +116,29 @@ def draw_registration_result(source, target, transformation):
 def registerCubes(trans, cubes):
 	# Registering noisy cubes in first frame
 	
-	print(trans.shape, cubes.shape)
+	cloud1 = getCloud(cubes[0], [0.9, 0.2, 0])
+	cloud2 = getCloud(cubes[1], [0, 0.2, 0.9])
+	cloud3 = getCloud(cubes[2], [0.2, 0.9, 0])
+	cloud4 = getCloud(cubes[3], [0.5, 0, 0.95])
+	cloud5 = getCloud(cubes[4], [0.9, 0.45, 0])
 
-	
+	T1_2 = trans[0]
+	T2_3 = trans[1]
+	T3_4 = trans[2]
+	T4_5 = trans[3]
+
+	cloud2 = [ele.transform(T1_2) for ele in cloud2]
+	cloud3 = [ele.transform(T1_2 @ T2_3) for ele in cloud3]
+	cloud4 = [ele.transform(T1_2 @ T2_3 @ T3_4) for ele in cloud4]
+	cloud5 = [ele.transform(T1_2 @ T2_3 @ T3_4 @ T4_5) for ele in cloud5]
+
+	# o3d.visualization.draw_geometries(cloud2)
+
+	geometries = cloud1 + cloud2 + cloud3 + cloud4 + cloud5
+
+	o3d.visualization.draw_geometries(geometries)
+
+
 def icpTransformations(cubes):
 	# T1_2 : 2 wrt 1 
 
@@ -157,14 +181,14 @@ if __name__ == '__main__':
 	vertices, points = getVertices()
 	frames, poses = getFrames()
 
-	# visualizeData(vertices, frames)
+	visualizeData(vertices, frames)
 
 	gtCubes = getLocalCubes(points, poses)
-	noisyCubes = addNoiseCubes(gtCubes)
+	noisyCubesHigh = addNoiseCubes(gtCubes, noise=0.4)
+	noisyCubesLow = addNoiseCubes(gtCubes, noise=0.15)
 
-	gtTrans = icpTransformations(gtCubes)
-	noisyTrans = addNoiseTrans(gtTrans)
+	trans = icpTransformations(noisyCubesHigh)
 
-	registerCubes(noisyTrans, noisyCubes)
+	registerCubes(trans, noisyCubesLow)
 
 	# writeG2o(trans, cubes)
