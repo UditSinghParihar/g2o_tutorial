@@ -244,7 +244,7 @@ def writeLoop(X, Y, THETA, g2o):
 	# for i in range(len(X)):
 	# 	pairs.append((0, i))
 
-	info_mat = "500.0 0.0 0.0 500.0 0.0 500.0"
+	info_mat = "700.0 0.0 0.0 700.0 0.0 700.0"
 
 	for p in pairs:
 		p1 = (X[p[0]], Y[p[0]], THETA[p[0]])
