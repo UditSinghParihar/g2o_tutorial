@@ -335,7 +335,7 @@ if __name__ == '__main__':
 	vertices, points = getVertices()
 	frames, poses = getFrames()
 
-	# visualizeData(vertices, frames)
+	visualizeData(vertices, frames)
 
 	gtCubes = getLocalCubes(points, poses)
 	noisyCubesHigh = addNoiseCubes(gtCubes, noise=1.8)
