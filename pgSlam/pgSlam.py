@@ -104,8 +104,7 @@ def drawThree(X1, Y1, THETA1, X2, Y2, THETA2, X3, Y3, THETA3):
 
 
 def writeOdom(X, Y, THETA):
-	# g2o = open('/run/user/1000/gvfs/sftp:host=ada.iiit.ac.in,user=udit/home/udit/share/posesSim.g2o', 'w')
-	g2o = open('posesSim.g2o', 'w')
+	g2o = open('noise.g2o', 'w')
 
 	for i, (x, y, theta) in enumerate(zip(X,Y,THETA)):
 		line = "VERTEX_SE2 " + str(i) + " " + str(x) + " " + str(y) + " " + str(theta)
@@ -264,7 +263,7 @@ def writeLoop(X, Y, THETA, g2o):
 
 
 def optimize():
-	cmd = "g2o -o opt.g2o posesSim.g2o"
+	cmd = "g2o -o opt.g2o noise.g2o"
 	os.system(cmd)
 
 
