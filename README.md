@@ -5,7 +5,7 @@
 3. Problem statement:  
 	1. Pose Graph SLAM: A robot is travelling in a oval trajectory. It is equipped with wheel odometry for odometry information and RGBD sensors for loop closure and ICP transformation. Due to noise in wheel odometry it generated a noisy estimate of the trajectory. Our task is to use loop closure pairs to correct the drift.  
 	![Alt Text](pgSlam/results/lc_pose_graph.png)  
-	2. Landmark SLAM: A robot observes a cube from five different locations. The robot is equipped with RGBD sensors and would be using those to calculate odometry and the map of the cube. Due to noise in the sensors, it obtained a erroneous estimate of its poses and vertices of the cube. Our task is to couple odometry measurements and vertices(landmarks) measurements to generate a consistent and better estimate of those values.  
+	2. Landmark SLAM: A robot observes a cube from five different locations. The robot is equipped with RGBD sensors and would be using those to calculate odometry and the map of the cube. Due to noise in the sensors, it obtained a erroneous estimate of its poses and vertices of the cube. Our task is to couple odometry measurements and cube's vertices(landmarks) measurements to generate a consistent and better estimate of those values.  
 	![Alt Text](landmarkSlam/results/g2o_landmark.png)  
 4. Installation:  
 	1. You can either install using g2o binaries using command: `sudo apt install ros-kinetic-libg2o` or build g2o from [source](https://github.com/RainerKuemmerle/g2o#requirements).  
